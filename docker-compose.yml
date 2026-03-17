@@ -1,11 +1,11 @@
 version: "3.8"
 
 services:
-  site-dashboard:
+  project-tracking-regional:
     build:
       context: .
       dockerfile: Dockerfile
-    image: site-dashboard:latest
+    image: project-tracking-regional:latest
     ports:
       - "3000:80"
     restart: unless-stopped
