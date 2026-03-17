@@ -1,0 +1,2957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Location Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #0f1419;
+            --secondary-dark: #1a1f2e;
+            --tertiary-dark: #252d3d;
+            --accent-teal: #00d4ff;
+            --accent-cyan: #00f0ff;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --border-color: #2a3142;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        #app {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(15, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+        }
+
+        .header-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-button {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-button.active {
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+            color: var(--primary-dark);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .nav-button:not(.active) {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .nav-button:not(.active):hover {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            height: 100%;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Upload Page */
+        .upload-page {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-settings {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(26, 31, 46, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            z-index: 10;
+        }
+
+        .upload-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-toggle-label .toggle-input {
+            width: 40px;
+            height: 22px;
+            margin: 0;
+        }
+
+        .upload-toggle-label .toggle-text {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .toggle-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            display: block;
+            margin-left: 50px;
+            margin-top: -0.25rem;
+        }
+
+        .upload-page::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .upload-container {
+            position: relative;
+            z-index: 1;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .upload-box {
+            background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--tertiary-dark) 100%);
+            border: 2px dashed var(--accent-teal);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-box::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-box:hover {
+            border-color: var(--accent-cyan);
+            background: linear-gradient(135deg, var(--tertiary-dark) 0%, rgba(0, 212, 255, 0.05) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+        }
+
+        .upload-box.dragover {
+            border-color: var(--accent-cyan);
+            background: linear-gradient(135deg, var(--tertiary-dark) 0%, rgba(0, 212, 255, 0.1) 100%);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .upload-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--accent-teal);
+        }
+
+        .upload-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .upload-hint strong {
+            color: var(--accent-teal);
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--tertiary-dark);
+            border-top-color: var(--accent-teal);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 1rem auto 0;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-spinner.active {
+            display: block;
+        }
+
+        /* Map Page */
+        .map-page {
+            gap: 0;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 380px;
+            background: linear-gradient(180deg, var(--secondary-dark) 0%, var(--tertiary-dark) 100%);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: -2px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .sidebar-search {
+            position: relative;
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-search input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .sidebar-search input:focus {
+            outline: none;
+            border-color: var(--accent-teal);
+            background: var(--tertiary-dark);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+        }
+
+        .sidebar-search::before {
+            content: '🔍';
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.9rem;
+            opacity: 0.5;
+        }
+
+        .sidebar-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .stat-item {
+            background: rgba(0, 212, 255, 0.05);
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            color: var(--accent-teal);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .sidebar-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+        }
+
+        .site-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .site-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: linear-gradient(180deg, var(--accent-teal), var(--accent-cyan));
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .site-item:hover {
+            background: rgba(0, 212, 255, 0.08);
+            border-color: var(--accent-teal);
+            transform: translateX(4px);
+        }
+
+        .site-item.active {
+            background: rgba(0, 212, 255, 0.12);
+            border-color: var(--accent-teal);
+        }
+
+        .site-item.active::before {
+            opacity: 1;
+        }
+
+        .site-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--accent-teal);
+            margin-bottom: 0.4rem;
+        }
+
+        .site-address {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 0.4rem;
+        }
+
+        .site-meta {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .site-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .sidebar-detail {
+            display: none;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 8px;
+            margin: 0.75rem;
+            font-size: 0.9rem;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .sidebar-detail.active {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .detail-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            color: var(--accent-teal);
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .detail-field {
+            margin-bottom: 0.75rem;
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        .detail-button {
+            width: 100%;
+            margin-top: 1rem;
+            padding: 0.6rem;
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+            border: none;
+            border-radius: 6px;
+            color: var(--primary-dark);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Work Sans', sans-serif;
+        }
+
+        .detail-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Scrollbar Styling */
+        .sidebar-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .sidebar-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .sidebar-list::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-teal);
+        }
+
+        /* Overview Page */
+        .overview-page {
+            flex-direction: column;
+            padding: 2rem;
+            overflow-y: auto;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+        }
+
+        .overview-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .overview-header {
+            margin-bottom: 2rem;
+        }
+
+        .overview-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-teal);
+            margin-bottom: 0.5rem;
+        }
+
+        .overview-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .overview-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-search {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem 1rem;
+            background: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .filter-search::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .filter-search:hover {
+            border-color: var(--accent-teal);
+        }
+
+        .filter-search:focus {
+            outline: none;
+            border-color: var(--accent-teal);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .filter-select {
+            padding: 0.75rem 1rem;
+            background: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Work Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-select:hover {
+            border-color: var(--accent-teal);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--accent-teal);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .filter-button {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: 'Work Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .filter-button:hover {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        .regions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .region-card {
+            background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--tertiary-dark) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideUp 0.4s ease-out backwards;
+        }
+
+        .region-card:nth-child(1) { animation-delay: 0.05s; }
+        .region-card:nth-child(2) { animation-delay: 0.1s; }
+        .region-card:nth-child(3) { animation-delay: 0.15s; }
+        .region-card:nth-child(4) { animation-delay: 0.2s; }
+        .region-card:nth-child(5) { animation-delay: 0.25s; }
+        .region-card:nth-child(6) { animation-delay: 0.3s; }
+
+        .region-card:hover {
+            border-color: var(--accent-teal);
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .region-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-teal);
+            margin-bottom: 1rem;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-teal);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-badge.pending {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-badge.progress {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fde047;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .status-badge.complete {
+            background: rgba(16, 185, 129, 0.15);
+            color: #86efac;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .progress-container {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .progress-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan));
+            border-radius: 4px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Overview Table */
+        .overview-table-section {
+            margin-top: 3rem;
+        }
+
+        .overview-table-section h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-teal);
+            margin-bottom: 1.5rem;
+        }
+
+        .table-wrapper {
+            background: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        .overview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .overview-table thead {
+            background: var(--tertiary-dark);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .overview-table th {
+            padding: 1rem;
+            text-align: left;
+            color: var(--accent-teal);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-size: 0.8rem;
+        }
+
+        .overview-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .overview-table tbody tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .overview-table td:first-child {
+            color: var(--accent-teal);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+        }
+
+        .small-progress {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .small-progress-bar {
+            width: 100px;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .small-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan));
+            border-radius: 3px;
+        }
+
+        .small-progress-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 35px;
+        }
+
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .chart-container {
+            background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--tertiary-dark) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .chart-container h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-teal);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        .chart-container canvas {
+            max-height: 300px;
+        }
+
+        .chart-stacked {
+            margin-bottom: 2rem;
+            grid-column: 1 / -1;
+        }
+
+        .chart-stacked canvas {
+            max-height: 400px;
+        }
+
+        /* Drill-down Modal */
+        .drill-down-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 500;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .drill-down-modal.active {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .drill-down-content {
+            background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--tertiary-dark) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px 16px 0 0;
+            max-height: 90vh;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .drill-down-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .back-button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .back-button:hover {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        .drill-down-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-teal);
+            flex: 1;
+        }
+
+        .drill-down-search {
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .drill-down-search input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .drill-down-search input:focus {
+            outline: none;
+            border-color: var(--accent-teal);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .drill-down-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(0, 212, 255, 0.03);
+        }
+
+        .drill-stat {
+            text-align: center;
+        }
+
+        .drill-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.5rem;
+        }
+
+        .drill-stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--accent-teal);
+        }
+
+        .sites-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .site-card {
+            background: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .site-card:hover {
+            border-color: var(--accent-teal);
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.15);
+            transform: translateX(4px);
+        }
+
+        .site-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.75rem;
+        }
+
+        .site-card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-teal);
+        }
+
+        .site-card-status {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .site-card-info {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .site-card-info strong {
+            color: var(--text-primary);
+        }
+
+        .site-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Scrollbar Styling for Modal */
+        .sites-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sites-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .sites-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .sites-list::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-teal);
+        }
+
+        /* Sites Table */
+        .sites-table-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .sites-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .sites-table thead {
+            position: sticky;
+            top: 0;
+            background: var(--tertiary-dark);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .sites-table th {
+            padding: 1rem;
+            text-align: left;
+            color: var(--accent-teal);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-size: 0.8rem;
+        }
+
+        .sites-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .sites-table tbody tr {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sites-table tbody tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .sites-table tbody tr:hover td {
+            color: var(--accent-teal);
+        }
+
+        .sites-table td:first-child {
+            color: var(--accent-teal);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+        }
+
+        /* Site Details Modal */
+        .site-details-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .site-details-modal.active {
+            display: flex;
+        }
+
+        .site-details-content {
+            background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--tertiary-dark) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .close-details-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 1.5rem;
+            font-weight: 300;
+        }
+
+        .close-details-btn:hover {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        .site-details-content h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--accent-teal);
+            margin-bottom: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .details-field {
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .details-field:last-child {
+            border-bottom: none;
+        }
+
+        .details-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.5rem;
+            display: block;
+            font-weight: 600;
+        }
+
+        .details-value {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .details-status {
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+
+        /* Toggle Switch */
+        .modal-toggle-section {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-input {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 44px;
+            height: 24px;
+            background: var(--border-color);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .toggle-input::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-input:checked {
+            background: var(--accent-teal);
+        }
+
+        .toggle-input:checked::before {
+            left: 22px;
+        }
+
+        .toggle-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            transition: color 0.2s ease;
+        }
+
+        .toggle-label:hover .toggle-text {
+            color: var(--text-primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 300px;
+            }
+
+            .header-title {
+                font-size: 1.4rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 300px;
+                max-height: 50%;
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+
+            .upload-container {
+                padding: 1rem;
+            }
+
+            .upload-box {
+                padding: 2rem 1rem;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .header-nav {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 1rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+
+        .empty-state-text {
+            font-size: 0.95rem;
+        }
+
+        /* API Key Setup Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--tertiary-dark) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2.5rem;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .modal-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--accent-teal);
+            margin-bottom: 1rem;
+        }
+
+        .modal-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .modal-steps {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-step {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .modal-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-step-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+            color: var(--primary-dark);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: 700;
+            margin-right: 0.75rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .modal-step a {
+            color: var(--accent-teal);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .modal-input-group {
+            margin-bottom: 1rem;
+        }
+
+        .modal-input-label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--tertiary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Work Sans', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--accent-teal);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+            background: var(--tertiary-dark);
+        }
+
+        .modal-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Work Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .modal-button.primary {
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+            color: var(--primary-dark);
+        }
+
+        .modal-button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+        }
+
+        .modal-button.secondary {
+            background: transparent;
+            color: var(--accent-teal);
+            border: 1px solid var(--accent-teal);
+        }
+
+        .modal-button.secondary:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: none;
+        }
+
+        .info-box.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- API Key Setup Modal -->
+        <div class="modal-overlay" id="apiKeyModal">
+            <div class="modal">
+                <div class="modal-title">🔑 Setup Google Maps API</div>
+                <div class="modal-subtitle">To use the map features, you'll need a Google Maps API Key. Here's how to get one:</div>
+
+                <div class="modal-steps">
+                    <div class="modal-step">
+                        <span class="modal-step-number">1</span>
+                        <span>Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></span>
+                    </div>
+                    <div class="modal-step">
+                        <span class="modal-step-number">2</span>
+                        <span>Create a new project (or select existing)</span>
+                    </div>
+                    <div class="modal-step">
+                        <span class="modal-step-number">3</span>
+                        <span>Enable <strong>Maps JavaScript API</strong> and <strong>Geocoding API</strong></span>
+                    </div>
+                    <div class="modal-step">
+                        <span class="modal-step-number">4</span>
+                        <span>Create an API key in the Credentials section (click "Create Credentials" → API Key)</span>
+                    </div>
+                </div>
+
+                <div class="modal-input-group">
+                    <label class="modal-input-label">Paste your API Key here:</label>
+                    <input
+                        type="text"
+                        id="apiKeyInput"
+                        class="modal-input"
+                        placeholder="AIzaSy..."
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="modal-toggle-section">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="skipGeocodingToggle" class="toggle-input">
+                        <span class="toggle-text">Skip geocoding & disable map (saves API credits)</span>
+                    </label>
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="modal-button primary" id="saveApiKeyBtn">Save & Continue</button>
+                    <button class="modal-button secondary" id="skipApiKeyBtn">Skip for Now</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="header">
+            <div class="header-title">📍 Site Dashboard</div>
+            <div class="header-nav">
+                <button class="nav-button active" data-page="upload">Upload</button>
+                <button class="nav-button" data-page="overview">Overview</button>
+                <button class="nav-button" data-page="map">Map View</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Upload Page -->
+            <div class="page active upload-page" id="upload-page">
+                <div class="upload-settings">
+                    <label class="upload-toggle-label">
+                        <input type="checkbox" id="uploadGeocodingToggle" class="toggle-input">
+                        <span class="toggle-text">🗺️ Enable Google Maps</span>
+                    </label>
+                    <span class="toggle-hint">Map visualization & geocoding</span>
+                </div>
+
+                <div class="upload-container">
+                    <div class="upload-box" id="uploadBox">
+                        <div class="upload-icon">📊</div>
+                        <div class="upload-title">Upload Excel File</div>
+                        <div class="upload-subtitle">Drag and drop or click to select</div>
+                        <div class="upload-hint">
+                            Your file should contain columns:<br>
+                            <strong>Branch Name</strong>, <strong>Address</strong>,<br>and other details (optional)
+                        </div>
+                        <div class="loading-spinner" id="spinner"></div>
+                    </div>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+                    <div class="info-box" id="infoBox"></div>
+                </div>
+            </div>
+
+            <!-- Overview Page -->
+            <div class="page overview-page" id="overview-page">
+                <div class="overview-container">
+                    <div class="overview-header">
+                        <h2>Regional Overview</h2>
+                        <p>Branch distribution and installation status by region</p>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="charts-section">
+                        <div class="chart-container chart-1">
+                            <h3>Branches per Region</h3>
+                            <canvas id="branchesChart"></canvas>
+                        </div>
+                        <div class="chart-container chart-2">
+                            <h3>Overall Status Distribution</h3>
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-container chart-stacked">
+                        <h3>Status Breakdown by Region</h3>
+                        <canvas id="stackedChart"></canvas>
+                    </div>
+
+                    <div class="overview-filters">
+                        <input
+                            type="text"
+                            id="overviewSearch"
+                            class="filter-search"
+                            placeholder="Search regions or branches..."
+                            autocomplete="off"
+                        >
+                        <select id="statusFilter" class="filter-select">
+                            <option value="">All Statuses</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                        <button id="clearFiltersBtn" class="filter-button">Clear Filters</button>
+                    </div>
+
+                    <div class="regions-grid" id="regionsGrid">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">Upload a file to see regional overview</div>
+                        </div>
+                    </div>
+
+                    <div class="overview-table-section">
+                        <h3>Regional Summary Table</h3>
+                        <div class="table-wrapper">
+                            <table class="overview-table">
+                                <thead>
+                                    <tr>
+                                        <th>Region</th>
+                                        <th>Total Branches</th>
+                                        <th>Not Started</th>
+                                        <th>In Progress</th>
+                                        <th>Completed</th>
+                                        <th>Completion Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="overviewTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drill-down Modal -->
+                <div class="drill-down-modal" id="drillDownModal">
+                    <div class="drill-down-content">
+                        <div class="drill-down-header">
+                            <button class="back-button" id="backButton">← Back</button>
+                            <h2 id="drillDownTitle">Region Sites</h2>
+                            <div class="drill-down-search">
+                                <input type="text" id="drillDownSearch" placeholder="Search branch..." autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="drill-down-stats">
+                            <div class="drill-stat">
+                                <div class="drill-stat-label">Total Sites</div>
+                                <div class="drill-stat-value" id="drillTotalSites">0</div>
+                            </div>
+                            <div class="drill-stat">
+                                <div class="drill-stat-label">Not Started</div>
+                                <div class="drill-stat-value" id="drillNotStartedSites" style="color: #fca5a5;">0</div>
+                            </div>
+                            <div class="drill-stat">
+                                <div class="drill-stat-label">In Progress</div>
+                                <div class="drill-stat-value" id="drillInProgressSites" style="color: #fde047;">0</div>
+                            </div>
+                            <div class="drill-stat">
+                                <div class="drill-stat-label">Completed</div>
+                                <div class="drill-stat-value" id="drillCompletedSites" style="color: #86efac;">0</div>
+                            </div>
+                        </div>
+
+                        <div class="sites-table-wrapper">
+                            <table class="sites-table">
+                                <thead>
+                                    <tr>
+                                        <th>Branch Name</th>
+                                        <th>Address</th>
+                                        <th>Status</th>
+                                        <th>Installation Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sitesTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Site Details Modal -->
+                        <div class="site-details-modal" id="siteDetailsModal">
+                            <div class="site-details-content">
+                                <button class="close-details-btn" id="closeDetailsBtn">✕</button>
+                                <h2 id="detailsTitle"></h2>
+                                <div id="detailsContent"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Page -->
+            <div class="page map-page" id="map-page">
+                <div class="map-container">
+                    <div id="map"></div>
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-state-icon">📍</div>
+                        <div class="empty-state-text">Upload a file to see locations on the map</div>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <div class="sidebar-search">
+                            <input
+                                type="text"
+                                id="searchInput"
+                                placeholder="Search sites..."
+                                autocomplete="off"
+                            >
+                        </div>
+                        <div class="sidebar-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Total Sites</div>
+                                <div class="stat-value" id="totalSites">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Geocoded</div>
+                                <div class="stat-value" id="geocodedCount">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-list" id="siteList"></div>
+
+                    <div class="sidebar-detail" id="detailPanel">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                            <div class="detail-title" id="detailTitle"></div>
+                            <button id="closeDetailBtn" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.25rem; padding: 0;">✕</button>
+                        </div>
+                        <div id="detailContent"></div>
+                        <button class="detail-button" id="directionsBtn">Directions →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== STATE ====================
+        let allSites = [];
+        let filteredSites = [];
+        let map = null;
+        let markers = [];
+        let selectedSite = null;
+        let geocoder = null;
+        let apiKey = localStorage.getItem('googleMapsApiKey') || null;
+        let mapsScriptLoaded = false;
+        let skipGeocoding = localStorage.getItem('skipGeocoding') === 'true';
+
+        // ==================== API KEY MANAGEMENT ====================
+        function loadGoogleMapsScript() {
+            if (!apiKey) {
+                showApiKeyModal();
+                return;
+            }
+
+            if (mapsScriptLoaded) return;
+
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry`;
+            script.onload = () => {
+                mapsScriptLoaded = true;
+                initializeMap();
+            };
+            script.onerror = () => {
+                console.error('Failed to load Google Maps');
+                showApiKeyModal();
+            };
+            document.head.appendChild(script);
+        }
+
+        function showApiKeyModal() {
+            document.getElementById('apiKeyModal').classList.add('active');
+        }
+
+        function hideApiKeyModal() {
+            document.getElementById('apiKeyModal').classList.remove('active');
+        }
+
+        document.getElementById('saveApiKeyBtn')?.addEventListener('click', () => {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            const skipGeocodingToggle = document.getElementById('skipGeocodingToggle');
+
+            if (key) {
+                localStorage.setItem('googleMapsApiKey', key);
+                apiKey = key;
+
+                if (skipGeocodingToggle && skipGeocodingToggle.checked) {
+                    skipGeocoding = true;
+                    localStorage.setItem('skipGeocoding', 'true');
+                    hideApiKeyModal();
+                    document.getElementById('map').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📍</div><div class="empty-state-text">Geocoding disabled - showing data only. Enable in settings to use Google Maps.</div></div>';
+                } else {
+                    skipGeocoding = false;
+                    localStorage.setItem('skipGeocoding', 'false');
+                    hideApiKeyModal();
+                    loadGoogleMapsScript();
+                }
+            }
+        });
+
+        document.getElementById('skipApiKeyBtn')?.addEventListener('click', () => {
+            const skipGeocodingToggle = document.getElementById('skipGeocodingToggle');
+            if (skipGeocodingToggle && skipGeocodingToggle.checked) {
+                skipGeocoding = true;
+                localStorage.setItem('skipGeocoding', 'true');
+                hideApiKeyModal();
+                document.getElementById('map').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📍</div><div class="empty-state-text">Geocoding disabled - showing data only. Enable in settings to use Google Maps.</div></div>';
+            } else {
+                hideApiKeyModal();
+                document.getElementById('map').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Google Maps API key not configured. Please set up an API key to use the map.</div></div>';
+            }
+        });
+
+        document.getElementById('apiKeyInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('saveApiKeyBtn').click();
+            }
+        });
+
+        // ==================== INITIALIZATION ====================
+        function initializeMap() {
+            const mapStyle = [
+                {
+                    "elementType": "geometry",
+                    "stylers": [{"color": "#1a1f2e"}]
+                },
+                {
+                    "elementType": "labels.text.stroke",
+                    "stylers": [{"color": "#1a1f2e"}]
+                },
+                {
+                    "elementType": "labels.text.fill",
+                    "stylers": [{"color": "#b0b8c1"}]
+                },
+                {
+                    "featureType": "administrative",
+                    "elementType": "geometry.stroke",
+                    "stylers": [{"color": "#2a3142"}]
+                },
+                {
+                    "featureType": "road",
+                    "elementType": "geometry",
+                    "stylers": [{"color": "#252d3d"}]
+                },
+                {
+                    "featureType": "water",
+                    "elementType": "geometry",
+                    "stylers": [{"color": "#0f1419"}]
+                }
+            ];
+
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+                center: { lat: 3.1390, lng: 101.6869 }, // Malaysia center
+                styles: mapStyle,
+                disableDefaultUI: false,
+                zoomControl: true,
+                fullscreenControl: true,
+                mapTypeControl: false,
+                streetViewControl: false
+            });
+
+            geocoder = new google.maps.Geocoder();
+        }
+
+        // ==================== REGIONAL ANALYSIS ====================
+        function extractRegion(address) {
+            if (!address) return 'Unknown';
+
+            const upperAddress = address.toUpperCase();
+
+            // KL/Putrajaya
+            if (upperAddress.includes('KUALA LUMPUR') || upperAddress.includes('KL') ||
+                upperAddress.includes('PUTRAJAYA') || upperAddress.includes('CHERAS') ||
+                upperAddress.includes('KEPONG') || upperAddress.includes('DAMANSARA')) {
+                return 'KL/Putrajaya';
+            }
+
+            // Selangor
+            if (upperAddress.includes('SELANGOR') || upperAddress.includes('PUCHONG') ||
+                upperAddress.includes('PETALING JAYA') || upperAddress.includes('SHAH ALAM') ||
+                upperAddress.includes('SUNGAI BULOH') || upperAddress.includes('PORT KLANG') ||
+                upperAddress.includes('KLANG') || upperAddress.includes('BANDAR PUTERI') ||
+                upperAddress.includes('BANDAR BARU BANGI') || upperAddress.includes('KUALA SELANGOR') ||
+                upperAddress.includes('MELAWATI') || upperAddress.includes('SUBANG') ||
+                upperAddress.includes('GOMBAK') || upperAddress.includes('AMPANG')) {
+                return 'Selangor';
+            }
+
+            // Melaka/NS (Negeri Sembilan)
+            if (upperAddress.includes('MELAKA') || upperAddress.includes('MELACCA') ||
+                upperAddress.includes('NEGERI SEMBILAN') || upperAddress.includes('NS') ||
+                upperAddress.includes('SEREMBAN') || upperAddress.includes('PORT DICKSON')) {
+                return 'Melaka/NS';
+            }
+
+            // Pahang
+            if (upperAddress.includes('PAHANG') || upperAddress.includes('KUANTAN') ||
+                upperAddress.includes('KUALA TERENGGANU')) {
+                return 'Pahang';
+            }
+
+            // Perak
+            if (upperAddress.includes('PERAK') || upperAddress.includes('IPOH') ||
+                upperAddress.includes('TAIPING') || upperAddress.includes('KLANG')) {
+                return 'Perak';
+            }
+
+            // Pulau Penang/Kedah/Perlis
+            if (upperAddress.includes('PENANG') || upperAddress.includes('PULAU PENANG') ||
+                upperAddress.includes('GEORGE TOWN') || upperAddress.includes('KEDAH') ||
+                upperAddress.includes('PERLIS') || upperAddress.includes('ALOR SETAR')) {
+                return 'Pulau Penang/Kedah/Perlis';
+            }
+
+            // Johor
+            if (upperAddress.includes('JOHOR') || upperAddress.includes('JOHOR BAHRU') ||
+                upperAddress.includes('JB') || upperAddress.includes('ISKANDAR')) {
+                return 'Johor';
+            }
+
+            // Kelantan/Terengganu
+            if (upperAddress.includes('KELANTAN') || upperAddress.includes('TERENGGANU') ||
+                upperAddress.includes('KUALA TERENGGANU') || upperAddress.includes('KOTA BHARU')) {
+                return 'Kelantan/Terengganu';
+            }
+
+            // Sabah
+            if (upperAddress.includes('SABAH') || upperAddress.includes('KOTA KINABALU') ||
+                upperAddress.includes('KK') || upperAddress.includes('SANDAKAN')) {
+                return 'Sabah';
+            }
+
+            // Sarawak
+            if (upperAddress.includes('SARAWAK') || upperAddress.includes('KUCHING') ||
+                upperAddress.includes('SIBU') || upperAddress.includes('MIRI')) {
+                return 'Sarawak';
+            }
+
+            return 'Unknown';
+        }
+
+        let chartInstances = {};
+        let currentRegionsData = {};
+        let filterStatus = '';
+        let filterSearch = '';
+
+        function applyFilters() {
+            const regionsArray = Object.values(currentRegionsData).sort((a, b) => b.totalBranches - a.totalBranches);
+            let filteredRegions = regionsArray;
+
+            // Apply status filter
+            if (filterStatus) {
+                filteredRegions = filteredRegions.filter(region => region[filterStatus] > 0);
+            }
+
+            // Apply search filter
+            if (filterSearch) {
+                const searchLower = filterSearch.toLowerCase();
+                filteredRegions = filteredRegions.filter(region =>
+                    region.name.toLowerCase().includes(searchLower)
+                );
+            }
+
+            // Re-render cards and table
+            renderRegionCards(filteredRegions);
+            renderOverviewTable(filteredRegions);
+        }
+
+        function renderRegionCards(regionsArray) {
+            const regionsGrid = document.getElementById('regionsGrid');
+            regionsGrid.innerHTML = '';
+
+            if (regionsArray.length === 0) {
+                regionsGrid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><div class="empty-state-icon">🔍</div><div class="empty-state-text">No regions match your filters</div></div>';
+                return;
+            }
+
+            regionsArray.forEach((region, index) => {
+                const progress = region.totalBranches > 0
+                    ? Math.round((region['Completed'] / region.totalBranches) * 100)
+                    : 0;
+
+                const card = document.createElement('div');
+                card.className = 'region-card';
+                card.style.cursor = 'pointer';
+                card.onclick = () => showDrillDown(region);
+                card.innerHTML = `
+                    <div class="region-name">${region.name}</div>
+                    <div class="metric-row">
+                        <span class="metric-label">Total Branches</span>
+                        <span class="metric-value">${region.totalBranches}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Not Started</span>
+                        <span class="metric-value" style="color: #fca5a5;">${region['Not Started']}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">In Progress</span>
+                        <span class="metric-value" style="color: #fde047;">${region['In Progress']}</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Completed</span>
+                        <span class="metric-value" style="color: #86efac;">${region['Completed']}</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Completion Rate</span>
+                            <span>${progress}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                `;
+                regionsGrid.appendChild(card);
+            });
+        }
+
+        function renderOverviewTable(regionsArray) {
+            const tableBody = document.getElementById('overviewTableBody');
+            tableBody.innerHTML = '';
+
+            if (regionsArray.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = '<td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No regions match your filters</td>';
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+
+            regionsArray.forEach(region => {
+                const progress = region.totalBranches > 0
+                    ? Math.round((region['Completed'] / region.totalBranches) * 100)
+                    : 0;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${region.name}</td>
+                    <td>${region.totalBranches}</td>
+                    <td style="color: #fca5a5;">${region['Not Started']}</td>
+                    <td style="color: #fde047;">${region['In Progress']}</td>
+                    <td style="color: #86efac;">${region['Completed']}</td>
+                    <td>
+                        <div class="small-progress">
+                            <div class="small-progress-bar">
+                                <div class="small-progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <span class="small-progress-text">${progress}%</span>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function analyzeRegionalData() {
+            const regions = {};
+
+            allSites.forEach(site => {
+                const region = extractRegion(site.address);
+
+                if (!regions[region]) {
+                    regions[region] = {
+                        name: region,
+                        totalBranches: 0,
+                        'Completed': 0,
+                        'In Progress': 0,
+                        'Not Started': 0,
+                        complete: 0,
+                        sites: []
+                    };
+                }
+
+                regions[region].totalBranches++;
+                regions[region].sites.push(site);
+
+                // Use the Status field from Excel
+                const status = (site.status || 'Not Started').trim();
+
+                if (status === 'Completed') {
+                    regions[region]['Completed']++;
+                    regions[region].complete++;
+                } else if (status === 'In Progress') {
+                    regions[region]['In Progress']++;
+                } else {
+                    regions[region]['Not Started']++;
+                }
+            });
+
+            return regions;
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                pending: 'rgba(239, 68, 68, 0.8)',
+                pendingDelivery: 'rgba(239, 68, 68, 0.8)',
+                pendingInstallation: 'rgba(239, 68, 68, 0.8)',
+                pendingUAT: 'rgba(251, 191, 36, 0.8)',
+                underRenovation: 'rgba(251, 191, 36, 0.8)',
+                complete: 'rgba(16, 185, 129, 0.8)'
+            };
+            return colors[status] || 'rgba(100, 116, 139, 0.8)';
+        }
+
+        function renderCharts(regions) {
+            const regionsArray = Object.values(regions).sort((a, b) => b.totalBranches - a.totalBranches);
+
+            // Chart colors
+            const chartColors = {
+                primary: 'rgba(0, 212, 255, 0.8)',
+                pending: 'rgba(239, 68, 68, 0.8)',
+                progress: 'rgba(251, 191, 36, 0.8)',
+                complete: 'rgba(16, 185, 129, 0.8)',
+                border: 'rgba(0, 212, 255, 0.2)'
+            };
+
+            // 1. Branches per Region (Horizontal Bar Chart - Clickable)
+            const branchesCtx = document.getElementById('branchesChart')?.getContext('2d');
+            if (branchesCtx) {
+                if (chartInstances.branchesChart) chartInstances.branchesChart.destroy();
+
+                chartInstances.branchesChart = new Chart(branchesCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: regionsArray.map(r => r.name),
+                        datasets: [{
+                            label: 'Total Branches',
+                            data: regionsArray.map(r => r.totalBranches),
+                            backgroundColor: chartColors.primary,
+                            borderColor: chartColors.border,
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 20, 25, 0.9)',
+                                padding: 12,
+                                titleColor: '#00d4ff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#2a3142',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { color: '#b0b8c1' },
+                                grid: { color: 'rgba(42, 49, 66, 0.3)' }
+                            },
+                            y: {
+                                ticks: { color: '#b0b8c1' },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+
+                // Make bars clickable
+                branchesCtx.canvas.addEventListener('click', (e) => {
+                    const points = chartInstances.branchesChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+                    if (points.length > 0) {
+                        const regionIndex = points[0].index;
+                        showDrillDown(regionsArray[regionIndex]);
+                    }
+                });
+            }
+
+            // 2. Overall Status Distribution (Pie Chart - Clickable)
+            const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+            if (statusCtx) {
+                if (chartInstances.statusChart) chartInstances.statusChart.destroy();
+
+                const totalNotStarted = regionsArray.reduce((sum, r) => sum + r['Not Started'], 0);
+                const totalInProgress = regionsArray.reduce((sum, r) => sum + r['In Progress'], 0);
+                const totalCompleted = regionsArray.reduce((sum, r) => sum + r['Completed'], 0);
+
+                chartInstances.statusChart = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Not Started', 'In Progress', 'Completed'],
+                        datasets: [{
+                            data: [totalNotStarted, totalInProgress, totalCompleted],
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.8)',
+                                'rgba(251, 191, 36, 0.8)',
+                                'rgba(16, 185, 129, 0.8)'
+                            ],
+                            borderColor: '#0f1419',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        onClick: (e) => {
+                            const points = chartInstances.statusChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+                            if (points.length > 0) {
+                                const statusIndex = points[0].index;
+                                const statuses = ['Not Started', 'In Progress', 'Completed'];
+                                const selectedStatus = statuses[statusIndex];
+                                filterStatus = filterStatus === selectedStatus ? '' : selectedStatus;
+                                document.getElementById('statusFilter').value = filterStatus;
+                                applyFilters();
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#b0b8c1',
+                                    padding: 15,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 20, 25, 0.9)',
+                                padding: 12,
+                                titleColor: '#00d4ff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#2a3142',
+                                borderWidth: 1,
+                                callbacks: {
+                                    afterLabel: function() {
+                                        return '(Click to filter)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                statusCtx.canvas.style.cursor = 'pointer';
+            }
+
+            // 3. Status Breakdown by Region (Stacked Bar Chart)
+            const stackedCtx = document.getElementById('stackedChart')?.getContext('2d');
+            if (stackedCtx) {
+                if (chartInstances.stackedChart) chartInstances.stackedChart.destroy();
+
+                chartInstances.stackedChart = new Chart(stackedCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: regionsArray.map(r => r.name),
+                        datasets: [
+                            {
+                                label: 'Not Started',
+                                data: regionsArray.map(r => r['Not Started']),
+                                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'In Progress',
+                                data: regionsArray.map(r => r['In Progress']),
+                                backgroundColor: 'rgba(251, 191, 36, 0.8)',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Completed',
+                                data: regionsArray.map(r => r['Completed']),
+                                backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        indexAxis: 'x',
+                        scales: {
+                            x: { stacked: true, ticks: { color: '#b0b8c1' }, grid: { color: 'rgba(42, 49, 66, 0.3)' } },
+                            y: { stacked: true, ticks: { color: '#b0b8c1' }, grid: { color: 'rgba(42, 49, 66, 0.3)' } }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#b0b8c1',
+                                    padding: 15,
+                                    font: { size: 11 }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 20, 25, 0.9)',
+                                padding: 12,
+                                titleColor: '#00d4ff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#2a3142',
+                                borderWidth: 1
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        let currentDrillDownRegion = null;
+
+        function showDrillDown(regionData) {
+            const modal = document.getElementById('drillDownModal');
+            currentDrillDownRegion = regionData;
+
+            document.getElementById('drillDownTitle').textContent = regionData.name;
+            document.getElementById('drillTotalSites').textContent = regionData.totalBranches;
+            document.getElementById('drillNotStartedSites').textContent = regionData['Not Started'];
+            document.getElementById('drillInProgressSites').textContent = regionData['In Progress'];
+            document.getElementById('drillCompletedSites').textContent = regionData['Completed'];
+
+            // Reset search
+            document.getElementById('drillDownSearch').value = '';
+
+            renderDrillDownTable(regionData.sites);
+            modal.classList.add('active');
+        }
+
+        function renderDrillDownTable(sites) {
+            const tableBody = document.getElementById('sitesTableBody');
+            tableBody.innerHTML = '';
+
+            sites.forEach(site => {
+                const siteStatus = (site.status || 'Not Started').trim();
+                let statusClass = 'complete';
+
+                if (siteStatus === 'Not Started') {
+                    statusClass = 'pending';
+                } else if (siteStatus === 'In Progress') {
+                    statusClass = 'progress';
+                } else {
+                    statusClass = 'complete';
+                }
+
+                const row = document.createElement('tr');
+                row.onclick = () => showSiteDetails(site);
+                row.innerHTML = `
+                    <td>${site.name || 'Unknown'}</td>
+                    <td>${site.address || 'N/A'}</td>
+                    <td><span class="status-badge ${statusClass}">${siteStatus}</span></td>
+                    <td>${site.installDate || 'Pending'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function showSiteDetails(site) {
+            const modal = document.getElementById('siteDetailsModal');
+            const siteStatus = (site.status || 'Not Started').trim();
+            let statusClass = 'complete';
+
+            if (siteStatus === 'Not Started') {
+                statusClass = 'pending';
+            } else if (siteStatus === 'In Progress') {
+                statusClass = 'progress';
+            } else {
+                statusClass = 'complete';
+            }
+
+            document.getElementById('detailsTitle').textContent = site.name || 'Unknown';
+            document.getElementById('detailsContent').innerHTML = `
+                <div class="details-field">
+                    <span class="details-label">Status</span>
+                    <div class="details-status">
+                        <span class="status-badge ${statusClass}">${siteStatus}</span>
+                    </div>
+                </div>
+                <div class="details-field">
+                    <span class="details-label">Address</span>
+                    <div class="details-value">${site.address || 'N/A'}</div>
+                </div>
+                <div class="details-field">
+                    <span class="details-label">Contact Person</span>
+                    <div class="details-value">${site.contact || 'N/A'}</div>
+                </div>
+                <div class="details-field">
+                    <span class="details-label">Phone</span>
+                    <div class="details-value">${site.phone || 'N/A'}</div>
+                </div>
+                <div class="details-field">
+                    <span class="details-label">Installation Date</span>
+                    <div class="details-value">${site.installDate || 'Pending'}</div>
+                </div>
+                ${site.note ? `
+                <div class="details-field">
+                    <span class="details-label">Notes</span>
+                    <div class="details-value">${site.note}</div>
+                </div>
+                ` : ''}
+                <div class="details-field">
+                    <span class="details-label">Site ID</span>
+                    <div class="details-value">${site.id || 'N/A'}</div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function closeSiteDetails() {
+            document.getElementById('siteDetailsModal').classList.remove('active');
+        }
+
+        function closeDrillDown() {
+            document.getElementById('drillDownModal').classList.remove('active');
+        }
+
+        // Add event listeners
+        document.getElementById('backButton')?.addEventListener('click', closeDrillDown);
+        document.getElementById('drillDownModal')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeDrillDown();
+        });
+
+        document.getElementById('closeDetailsBtn')?.addEventListener('click', closeSiteDetails);
+        document.getElementById('siteDetailsModal')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeSiteDetails();
+        });
+
+        // Drill-down search
+        document.getElementById('drillDownSearch')?.addEventListener('input', (e) => {
+            if (!currentDrillDownRegion) return;
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = currentDrillDownRegion.sites.filter(site =>
+                (site.name || '').toLowerCase().includes(searchTerm) ||
+                (site.address || '').toLowerCase().includes(searchTerm)
+            );
+            renderDrillDownTable(filtered);
+        });
+
+        // Upload page geocoding toggle
+        const uploadGeocodingToggle = document.getElementById('uploadGeocodingToggle');
+        if (uploadGeocodingToggle) {
+            // Set initial state from localStorage
+            uploadGeocodingToggle.checked = localStorage.getItem('skipGeocoding') !== 'true';
+
+            // Listen for changes
+            uploadGeocodingToggle.addEventListener('change', () => {
+                skipGeocoding = !uploadGeocodingToggle.checked;
+                localStorage.setItem('skipGeocoding', skipGeocoding.toString());
+            });
+        }
+
+        // Overview page filter listeners
+        document.getElementById('overviewSearch')?.addEventListener('input', (e) => {
+            filterSearch = e.target.value;
+            applyFilters();
+        });
+
+        document.getElementById('statusFilter')?.addEventListener('change', (e) => {
+            filterStatus = e.target.value;
+            applyFilters();
+        });
+
+        document.getElementById('clearFiltersBtn')?.addEventListener('click', () => {
+            filterStatus = '';
+            filterSearch = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('overviewSearch').value = '';
+            applyFilters();
+        });
+
+        function renderOverviewDashboard() {
+            const regions = analyzeRegionalData();
+            currentRegionsData = regions;
+            filterStatus = '';
+            filterSearch = '';
+
+            // Reset filters
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('overviewSearch').value = '';
+
+            // Render charts
+            renderCharts(regions);
+
+            // Render initial cards and table
+            const regionsArray = Object.values(regions).sort((a, b) => b.totalBranches - a.totalBranches);
+            renderRegionCards(regionsArray);
+            renderOverviewTable(regionsArray);
+        }
+
+        function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(`${pageName}-page`).classList.add('active');
+            event.target.classList.add('active');
+
+            if (pageName === 'map' && map) {
+                setTimeout(() => {
+                    google.maps.event.trigger(map, 'resize');
+                }, 100);
+            }
+        }
+
+        // ==================== FILE HANDLING ====================
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+        const spinner = document.getElementById('spinner');
+        const infoBox = document.getElementById('infoBox');
+
+        uploadBox.addEventListener('click', () => fileInput.click());
+
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+
+            // Check if XLSX is loaded
+            if (typeof XLSX === 'undefined') {
+                showInfo('❌ Excel parser is loading... Please wait a moment and try again', false);
+                return;
+            }
+
+            spinner.classList.add('active');
+            infoBox.classList.remove('show');
+
+            try {
+                const reader = new FileReader();
+
+                reader.onerror = () => {
+                    showInfo('❌ Error reading file', false);
+                    spinner.classList.remove('active');
+                };
+
+                reader.onload = (e) => {
+                    try {
+                        const data = e.target.result;
+                        console.log('File loaded, parsing...');
+
+                        if (typeof XLSX === 'undefined') {
+                            throw new Error('XLSX library not loaded');
+                        }
+
+                        const workbook = XLSX.read(data, { type: 'binary' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                        console.log('Parsed data:', jsonData.length, 'rows');
+
+                        if (jsonData.length === 0) {
+                            showInfo('❌ No data found in the file.', false);
+                            spinner.classList.remove('active');
+                            return;
+                        }
+
+                        // Log first row to see actual column names
+                        console.log('Excel column names:', Object.keys(jsonData[0]));
+                        console.log('First row data:', jsonData[0]);
+
+                        // Smart column detection - finds columns by content, not exact name
+                        const findColumn = (row, ...possibleNames) => {
+                            for (let name of possibleNames) {
+                                if (row[name]) return row[name];
+                            }
+                            // If exact match not found, try case-insensitive search
+                            const keys = Object.keys(row);
+                            for (let name of possibleNames) {
+                                const key = keys.find(k => k.toLowerCase() === name.toLowerCase());
+                                if (key) return row[key];
+                            }
+                            return '';
+                        };
+
+                        allSites = jsonData.map((row, index) => ({
+                            id: index,
+                            name: findColumn(row, 'Branch Name', 'Site Name', 'branch name', 'site name') || `Site ${index + 1}`,
+                            address: findColumn(row, 'Address', 'address', 'ADDRESS') || '',
+                            phone: findColumn(row, 'H/Phone PC', 'Phone', 'phone', 'H/Phone PC', 'H/phone PC') || '',
+                            contact: findColumn(row, 'Pengurus', 'Contact', 'contact', 'PIC') || '',
+                            installDate: findColumn(row, 'Installation Date', 'Date', 'date', 'Installation date') || '',
+                            status: findColumn(row, 'Status', 'status', 'STATUS') || 'Not Started',
+                            lat: null,
+                            lng: null,
+                            ...row
+                        }));
+
+                        console.log('Sites prepared, starting geocoding...');
+                        geocodeSites();
+                    } catch (parseError) {
+                        console.error('Parse error:', parseError);
+                        showInfo('❌ Error parsing file: ' + parseError.message, false);
+                        spinner.classList.remove('active');
+                    }
+                };
+
+                reader.readAsBinaryString(file);
+            } catch (error) {
+                console.error('File read error:', error);
+                showInfo('❌ Error reading file: ' + error.message, false);
+                spinner.classList.remove('active');
+            }
+        }
+
+        // ==================== GEOCODING ====================
+        function geocodeSites() {
+            // If geocoding is disabled, skip it
+            if (skipGeocoding) {
+                document.getElementById('totalSites').textContent = allSites.length;
+                document.getElementById('geocodedCount').textContent = '0 (Geocoding Disabled)';
+                showInfo(`✅ Loaded ${allSites.length} sites (Geocoding disabled - map not available)`, true);
+                const spinner = document.getElementById('spinner');
+                if (spinner) spinner.classList.remove('active');
+                populateSiteList();
+                renderOverviewDashboard();
+                return;
+            }
+
+            let geocodedCount = 0;
+            let processed = 0;
+
+            // Update stats
+            document.getElementById('totalSites').textContent = allSites.length;
+
+            // If geocoder not available, skip geocoding
+            if (!geocoder || !mapsScriptLoaded) {
+                showInfo(`⚠️ Loaded ${allSites.length} sites (Map API not configured - add API key to geocode)`, true);
+                spinner.classList.remove('active');
+                document.getElementById('geocodedCount').textContent = '0';
+                populateSiteList();
+                renderOverviewDashboard();
+                return;
+            }
+
+            allSites.forEach((site, index) => {
+                setTimeout(() => {
+                    if (!site.address) {
+                        processed++;
+                        checkProgress();
+                        return;
+                    }
+
+                    try {
+                        geocoder.geocode({ address: site.address }, (results, status) => {
+                            if (status === 'OK' && results[0]) {
+                                site.lat = results[0].geometry.location.lat();
+                                site.lng = results[0].geometry.location.lng();
+                                geocodedCount++;
+                            }
+                            processed++;
+                            checkProgress();
+                        });
+                    } catch (error) {
+                        console.error('Geocoding error:', error);
+                        processed++;
+                        checkProgress();
+                    }
+                }, index * 100); // Rate limiting
+            });
+
+            function checkProgress() {
+                if (processed === allSites.length) {
+                    const successCount = allSites.filter(s => s.lat && s.lng).length;
+                    document.getElementById('totalSites').textContent = allSites.length;
+                    document.getElementById('geocodedCount').textContent = successCount;
+                    showInfo(`✅ Loaded ${allSites.length} sites (${successCount} geocoded)`, true);
+                    spinner.classList.remove('active');
+                    populateSiteList();
+                    renderOverviewDashboard();
+                    displayMap();
+                }
+            }
+        }
+
+        function showInfo(message, success = true) {
+            infoBox.textContent = message;
+            infoBox.classList.add('show');
+            infoBox.style.borderColor = success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)';
+            infoBox.style.background = success ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+        }
+
+        // ==================== MAP DISPLAY ====================
+        function displayMap() {
+            markers.forEach(m => m.setMap(null));
+            markers = [];
+
+            const geocoded = allSites.filter(s => s.lat && s.lng);
+
+            if (geocoded.length === 0) {
+                document.getElementById('emptyState').style.display = 'flex';
+                document.getElementById('totalSites').textContent = '0';
+                return;
+            }
+
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('totalSites').textContent = allSites.length;
+            document.getElementById('geocodedCount').textContent = geocoded.length;
+
+            geocoded.forEach((site, index) => {
+                const marker = new google.maps.Marker({
+                    position: { lat: site.lat, lng: site.lng },
+                    map: map,
+                    title: site.name,
+                    label: {
+                        text: site.name.charAt(0).toUpperCase(),
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                    },
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 12,
+                        fillColor: '#ff4444',
+                        fillOpacity: 0.9,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    }
+                });
+
+                marker.addListener('click', () => selectSite(site, marker));
+                markers.push(marker);
+            });
+
+            if (geocoded.length > 0) {
+                const bounds = new google.maps.LatLngBounds();
+                geocoded.forEach(site => {
+                    bounds.extend({ lat: site.lat, lng: site.lng });
+                });
+                map.fitBounds(bounds, 100);
+            }
+
+            populateSiteList();
+            filteredSites = [...allSites];
+        }
+
+        // ==================== SITE LIST ====================
+        function populateSiteList() {
+            const listContainer = document.getElementById('siteList');
+            listContainer.innerHTML = '';
+
+            allSites.forEach(site => {
+                const siteEl = document.createElement('div');
+                siteEl.className = 'site-item';
+                siteEl.innerHTML = `
+                    <div class="site-name">${site.name}</div>
+                    <div class="site-address">${site.address || 'No address'}</div>
+                    <div class="site-meta">
+                        ${site.lat ? '<div class="site-meta-item">✓ Mapped</div>' : '<div class="site-meta-item">✗ Not mapped</div>'}
+                        ${site.phone ? `<div class="site-meta-item">📞 Phone</div>` : ''}
+                    </div>
+                `;
+                siteEl.addEventListener('click', () => selectSite(site, null));
+                listContainer.appendChild(siteEl);
+            });
+        }
+
+        function selectSite(site, marker) {
+            selectedSite = site;
+
+            document.querySelectorAll('.site-item').forEach(el => el.classList.remove('active'));
+            event?.target?.closest('.site-item')?.classList.add('active');
+
+            const detailPanel = document.getElementById('detailPanel');
+            const detailTitle = document.getElementById('detailTitle');
+            const detailContent = document.getElementById('detailContent');
+            const directionsBtn = document.getElementById('directionsBtn');
+
+            detailTitle.textContent = site.name;
+
+            // Display all columns from the Excel row
+            let html = '';
+            const excludeKeys = ['id', 'name', 'lat', 'lng']; // Internal keys to skip
+            const keyOrder = [
+                'address', 'contact', 'phone', 'installDate',
+                'Cisco 9851', 'Cisco 9841', 'PC', 'Bridgenet PI',
+                'VOIP IP', 'Gateway', 'Note'
+            ];
+
+            // Display in preferred order first
+            keyOrder.forEach(key => {
+                if (site[key] && site[key] !== '') {
+                    const label = key.charAt(0).toUpperCase() + key.slice(1);
+                    html += `<div class="detail-field"><div class="detail-label">${label}</div><div class="detail-value">${site[key]}</div></div>`;
+                }
+            });
+
+            // Display remaining columns
+            Object.keys(site).forEach(key => {
+                if (!excludeKeys.includes(key) && !keyOrder.includes(key) && site[key] && site[key] !== '') {
+                    const label = key.charAt(0).toUpperCase() + key.slice(1);
+                    html += `<div class="detail-field"><div class="detail-label">${label}</div><div class="detail-value">${site[key]}</div></div>`;
+                }
+            });
+
+            detailContent.innerHTML = html;
+
+            if (site.lat && site.lng) {
+                directionsBtn.style.display = 'block';
+                directionsBtn.onclick = () => {
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${site.lat},${site.lng}`, '_blank');
+                };
+            } else {
+                directionsBtn.style.display = 'none';
+            }
+
+            detailPanel.classList.add('active');
+
+            if (site.lat && site.lng && map) {
+                map.setCenter({ lat: site.lat, lng: site.lng });
+                map.setZoom(15);
+            }
+        }
+
+        // ==================== DETAIL PANEL CLOSE ====================
+        document.getElementById('closeDetailBtn')?.addEventListener('click', () => {
+            const detailPanel = document.getElementById('detailPanel');
+            detailPanel.classList.remove('active');
+            document.querySelectorAll('.site-item').forEach(el => el.classList.remove('active'));
+        });
+
+        // ==================== SEARCH ====================
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const listContainer = document.getElementById('siteList');
+            const items = listContainer.querySelectorAll('.site-item');
+
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        });
+
+        // ==================== NAVIGATION ====================
+        document.querySelectorAll('.nav-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const pageName = button.dataset.page;
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+
+                document.getElementById(`${pageName}-page`).classList.add('active');
+                button.classList.add('active');
+
+                if (pageName === 'map' && map) {
+                    setTimeout(() => {
+                        google.maps.event.trigger(map, 'resize');
+                    }, 100);
+                }
+            });
+        });
+
+        // ==================== STARTUP ====================
+        window.addEventListener('load', () => {
+            loadGoogleMapsScript();
+        });
+    </script>
+</body>
+</html>

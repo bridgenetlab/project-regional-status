@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  site-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: site-dashboard:latest
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./dashboard:/usr/share/nginx/html

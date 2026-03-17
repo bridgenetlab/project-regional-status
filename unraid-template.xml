@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>site-dashboard</Name>
+  <Repository>ghcr.io/bridgenetlab/site-dashboard:latest</Repository>
+  <Registry>https://github.com/bridgenetlab/site-dashboard/pkgs/container/site-dashboard</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/bridgenetlab/site-dashboard/issues</Support>
+  <Project>https://github.com/bridgenetlab/site-dashboard</Project>
+  <Overview>Site Location Dashboard — Interactive map visualization of branch/office locations from Excel data uploads.</Overview>
+  <Category>Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/bridgenetlab/site-dashboard/main/unraid-template.xml</TemplateURL>
+  <Icon>https://cdn-icons-png.flaticon.com/512/891/891462.png</Icon>
+  <ExtraParams>--restart=unless-stopped</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="WebUI Port" Target="80" Default="3000" Mode="tcp" Description="Port to access the dashboard web interface." Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Data Path" Target="/data" Default="/mnt/user/appdata/site-dashboard" Mode="rw" Description="Persistent app data directory." Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/site-dashboard</Config>
+</Container>
