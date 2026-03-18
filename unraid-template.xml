@@ -23,4 +23,5 @@
   <Requires/>
   <Config Name="WebUI Port" Target="80" Default="3000" Mode="tcp" Description="Port to access the dashboard web interface." Type="Port" Display="always" Required="true" Mask="false">3000</Config>
   <Config Name="Data Path" Target="/data" Default="/mnt/user/appdata/project-tracking-regional" Mode="rw" Description="Persistent app data directory." Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/project-tracking-regional</Config>
+  <Config Name="Google Maps API Key" Target="GOOGLE_MAPS_API_KEY" Default="" Description="Your Google Maps API key. Get one free from Google Cloud Console (https://console.cloud.google.com/). Enable Maps JavaScript API and Geocoding API." Type="Variable" Display="always" Required="false" Mask="true"></Config>
 </Container>
