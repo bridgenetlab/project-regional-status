@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE_NAME: bridgenetlab/project-tracking-regional
+  IMAGE_NAME: bridgenetlab/site-dashboard
 
 jobs:
   build-and-push:
