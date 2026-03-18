@@ -1,0 +1,82 @@
+/* CSS Custom Properties - Dark and Light Themes */
+
+/* Dark theme (default - preserves existing teal/cyan aesthetic) */
+:root,
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-primary:        #0f1419;
+  --bg-secondary:      #1a1f2e;
+  --bg-tertiary:       #252d3d;
+  --bg-card:           rgba(26, 31, 46, 0.95);
+  --border-color:      #2a3142;
+
+  /* Text */
+  --text-primary:      #ffffff;
+  --text-secondary:    #b0b8c1;
+  --text-muted:        #6b7280;
+
+  /* Accents */
+  --accent-primary:    #00d4ff;
+  --accent-secondary:  #00f0ff;
+  --accent-glow:       rgba(0, 212, 255, 0.25);
+
+  /* Status colors */
+  --status-completed:  #10b981;
+  --status-progress:   #f59e0b;
+  --status-pending:    #ef4444;
+  --status-na:         #6b7280;
+
+  /* Schedule colors */
+  --schedule-ahead:    #10b981;
+  --schedule-behind:   #ef4444;
+  --schedule-ontime:   #00d4ff;
+
+  /* UI elements */
+  --chart-tooltip-bg:  rgba(15, 20, 25, 0.95);
+  --shadow-card:       0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow:       0 0 24px rgba(0, 212, 255, 0.15);
+  --input-bg:          #1a1f2e;
+  --input-border:      #2a3142;
+  --input-text:        #ffffff;
+  --button-bg-hover:   #2a3142;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-primary:        #f0f4f8;
+  --bg-secondary:      #ffffff;
+  --bg-tertiary:       #e8edf3;
+  --bg-card:           rgba(255, 255, 255, 0.95);
+  --border-color:      #d1d9e0;
+
+  /* Text */
+  --text-primary:      #0f1419;
+  --text-secondary:    #4a5568;
+  --text-muted:        #9ca3af;
+
+  /* Accents */
+  --accent-primary:    #0097b5;
+  --accent-secondary:  #00b8d9;
+  --accent-glow:       rgba(0, 151, 181, 0.2);
+
+  /* Status colors */
+  --status-completed:  #059669;
+  --status-progress:   #d97706;
+  --status-pending:    #dc2626;
+  --status-na:         #9ca3af;
+
+  /* Schedule colors */
+  --schedule-ahead:    #059669;
+  --schedule-behind:   #dc2626;
+  --schedule-ontime:   #0097b5;
+
+  /* UI elements */
+  --chart-tooltip-bg:  rgba(255, 255, 255, 0.98);
+  --shadow-card:       0 2px 12px rgba(0, 0, 0, 0.08);
+  --shadow-glow:       0 0 16px rgba(0, 151, 181, 0.12);
+  --input-bg:          #ffffff;
+  --input-border:      #d1d9e0;
+  --input-text:        #0f1419;
+  --button-bg-hover:   #e8edf3;
+}

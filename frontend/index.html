@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Tracking - Branch Installation</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- CDN Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/charts.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="header-title">Project Tracking</h1>
+            <div class="header-nav">
+                <button id="theme-toggle" class="theme-toggle-btn" title="Toggle theme">☾</button>
+                <nav id="navigation" class="nav"></nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Upload Page -->
+            <section id="page-upload" class="page page--active">
+                <div style="max-width: 600px; margin: 3rem auto;">
+                    <h2 style="text-align: center; margin-bottom: 2rem;">Upload Excel File</h2>
+
+                    <div id="drag-drop-zone" class="drag-drop-zone">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Drag and drop your Excel file here</p>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">or click to select a file</p>
+                        <input id="file-input" type="file" accept=".xlsx,.xls" style="display: none;">
+                    </div>
+
+                    <div id="upload-status" style="margin-top: 1.5rem; display: none;">
+                        <div id="upload-message" style="padding: 1rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+                        <div id="upload-errors" style="padding: 1rem; border-radius: 8px;"></div>
+                    </div>
+
+                    <div id="upload-success" style="display: none; margin-top: 1.5rem;">
+                        <div class="card" style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 1rem;">✓</div>
+                            <h3 style="margin-bottom: 1rem;">File uploaded successfully!</h3>
+                            <p id="row-count-msg" style="color: var(--text-secondary); margin-bottom: 1.5rem;"></p>
+                            <button id="continue-btn" class="btn btn-primary">Continue to Overview</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Overview Page -->
+            <section id="page-overview" class="page" style="display: none;">
+                <!-- KPI Cards - All in 1 Row (Clickable for filtering) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="kpi-card" style="cursor: default;">
+                        <div class="kpi-label">Total Branches</div>
+                        <div class="kpi-value" id="kpi-total">—</div>
+                    </div>
+                    <div class="kpi-card" style="cursor: pointer;" onclick="filterByStatus('Completed')">
+                        <div class="kpi-label">Completed</div>
+                        <div class="kpi-value" id="kpi-completed">—</div>
+                        <div class="kpi-subtext" id="kpi-completed-pct">0%</div>
+                    </div>
+                    <div class="kpi-card" style="cursor: pointer;" onclick="filterByStatus('In Progress')">
+                        <div class="kpi-label">In Progress</div>
+                        <div class="kpi-value" id="kpi-in-progress">—</div>
+                    </div>
+                    <div class="kpi-card" style="cursor: pointer;" onclick="filterByStatus('Not Started')">
+                        <div class="kpi-label">Not Started</div>
+                        <div class="kpi-value" id="kpi-not-started">—</div>
+                    </div>
+                    <div class="kpi-card" style="cursor: default;">
+                        <div class="kpi-label">Behind Schedule</div>
+                        <div class="kpi-value" id="kpi-behind">—</div>
+                    </div>
+                    <div class="kpi-card" style="cursor: default;">
+                        <div class="kpi-label">Avg Days Delta</div>
+                        <div class="kpi-value" id="kpi-avg-delta">—</div>
+                    </div>
+                    <div class="kpi-card" style="cursor: pointer;" onclick="filterBySiteReadiness()">
+                        <div class="kpi-label">Under Renovation</div>
+                        <div class="kpi-value" id="kpi-under-renovation">—</div>
+                    </div>
+                    <div class="kpi-card" style="cursor: pointer;" onclick="filterByUAT()">
+                        <div class="kpi-label">Pending UAT</div>
+                        <div class="kpi-value" id="kpi-pending-uat">—</div>
+                    </div>
+                    <div class="kpi-card" style="cursor: default;">
+                        <div class="kpi-label">Delivery Status</div>
+                        <div class="kpi-value" id="kpi-delivery-status">—</div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="grid grid-2" style="margin-bottom: 2rem;">
+                    <div class="chart-container">
+                        <h3 class="chart-title">Branches per Region</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="chart-regions"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3 class="chart-title">Status Distribution</h3>
+                        <div class="chart-wrapper doughnut">
+                            <canvas id="chart-status"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-1" style="margin-bottom: 2rem;">
+                    <div class="chart-container">
+                        <h3 class="chart-title">Status Breakdown by Region</h3>
+                        <div class="chart-wrapper" style="height: 450px;">
+                            <canvas id="chart-regional-status"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Region Cards -->
+                <h3 style="margin-bottom: 1.5rem;">Regional Overview</h3>
+                <div id="region-cards-container" class="grid grid-3" style="margin-bottom: 2rem;"></div>
+
+                <!-- Summary Table -->
+                <h3 style="margin-bottom: 1.5rem;">Regional Summary</h3>
+                <div style="overflow-x: auto;">
+                    <table id="summary-table" class="table">
+                        <thead>
+                            <tr>
+                                <th>Region</th>
+                                <th>Total</th>
+                                <th>Completed</th>
+                                <th>In Progress</th>
+                                <th>Not Started</th>
+                                <th>Completion %</th>
+                                <th>Avg Days Delta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Branches Page -->
+            <section id="page-branches" class="page" style="display: none;">
+                <!-- Active Filters from Overview -->
+                <div id="active-filters-banner" style="display: none; background: var(--accent-teal); color: var(--primary-dark); padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <strong>Active Filter:</strong>
+                            <span id="active-filters-text" style="margin-left: 0.5rem;"></span>
+                        </div>
+                        <button onclick="clearActiveFilters()" style="background: rgba(0,0,0,0.2); color: inherit; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters">
+                    <div class="filter-group">
+                        <label class="filter-label">Region</label>
+                        <select id="filter-region">
+                            <option value="">All Regions</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Status</label>
+                        <select id="filter-status">
+                            <option value="">All Status</option>
+                            <option value="Completed">Completed</option>
+                            <option value="In Progress">In Progress</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="flex: 2;">
+                        <label class="filter-label">Search</label>
+                        <input id="filter-search" type="text" placeholder="Search by branch, address, or contact...">
+                    </div>
+                </div>
+
+                <!-- Branches Table (grouped by region) -->
+                <div style="margin-bottom: 2rem;">
+                    <div id="branches-tbody"></div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button id="prev-page" class="pagination-btn">← Previous</button>
+                    <span class="pagination-info" id="page-info">Page 1</span>
+                    <button id="next-page" class="pagination-btn">Next →</button>
+                </div>
+            </section>
+
+            <!-- Timeline Page -->
+            <section id="page-timeline" class="page" style="display: none;">
+                <!-- Region Filter -->
+                <div class="filters" style="margin-bottom: 2rem;">
+                    <div class="filter-group">
+                        <label class="filter-label">Region</label>
+                        <select id="timeline-filter-region">
+                            <option value="">All Regions</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="grid grid-3" style="margin-bottom: 2rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Worst Delay</div>
+                        <div class="kpi-value" id="timeline-worst">—</div>
+                        <div class="kpi-subtext">days</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Best Performance</div>
+                        <div class="kpi-value" id="timeline-best">—</div>
+                        <div class="kpi-subtext">days ahead</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Average Delta</div>
+                        <div class="kpi-value" id="timeline-avg">—</div>
+                        <div class="kpi-subtext">days</div>
+                    </div>
+                </div>
+
+                <!-- Timeline Items -->
+                <div id="timeline-items-container" style="display: flex; flex-direction: column; gap: 1rem;"></div>
+            </section>
+
+            <!-- In Progress / Dependencies Page -->
+            <section id="page-progress" class="page" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">In Progress Branches - Dependency Analysis</h2>
+
+                <!-- Summary Stats -->
+                <div class="grid grid-3" style="margin-bottom: 2rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-label">In Progress</div>
+                        <div class="kpi-value" id="progress-total">—</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">With Dependencies</div>
+                        <div class="kpi-value" id="progress-with-deps">—</div>
+                        <div class="kpi-subtext" id="progress-with-deps-pct">0%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Blocked/At Risk</div>
+                        <div class="kpi-value" id="progress-blocked">—</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-2" style="margin-bottom: 2rem;">
+                    <div class="chart-container">
+                        <h3 class="chart-title">Branches by Dependency Count</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="chart-dependency-count"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3 class="chart-title">Dependency Types Distribution</h3>
+                        <div class="chart-wrapper doughnut">
+                            <canvas id="chart-dependency-types"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dependency Table -->
+                <h3 style="margin-bottom: 1rem;">Branches with Dependencies</h3>
+                <div style="overflow-x: auto; margin-bottom: 2rem;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Branch Name</th>
+                                <th>Region</th>
+                                <th>Status</th>
+                                <th>Dependencies</th>
+                                <th>Risk Level</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progress-dependencies-tbody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Dependency Network -->
+                <h3 style="margin-bottom: 1rem;">Dependency Network Overview</h3>
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 1.5rem; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div id="dependency-list-container" style="min-height: 300px; overflow-y: auto; max-height: 600px;"></div>
+                </div>
+            </section>
+
+            <!-- Costing Page -->
+            <section id="page-costing" class="page" style="display: none;">
+                <h2 style="margin-bottom: 1.5rem;">Installation Costing Analysis</h2>
+
+                <!-- Region Filter -->
+                <div class="filters" style="margin-bottom: 2rem;">
+                    <div class="filter-group">
+                        <label class="filter-label">Region</label>
+                        <select id="costing-filter-region">
+                            <option value="">All Regions</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="grid grid-4" style="margin-bottom: 2rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Cost</div>
+                        <div class="kpi-value" id="costing-total-cost">$0.00</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Installations</div>
+                        <div class="kpi-value" id="costing-total-records">0</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Top Vendor</div>
+                        <div class="kpi-value" style="font-size: 0.9rem;" id="costing-top-vendor">—</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Top Region</div>
+                        <div class="kpi-value" style="font-size: 0.9rem;" id="costing-top-region">—</div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="grid grid-2" style="margin-bottom: 2rem;">
+                    <div class="chart-container">
+                        <h3 class="chart-title">Cost by Region</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="chart-cost-by-region"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3 class="chart-title">Cost by Vendor</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="chart-cost-by-vendor"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Region Breakdown Table -->
+                <h3 style="margin-bottom: 1.5rem;">Region Breakdown</h3>
+                <div style="overflow-x: auto; margin-bottom: 2rem;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Region</th>
+                                <th>Count</th>
+                                <th>Total Cost</th>
+                                <th>Avg Cost</th>
+                                <th>Top Vendor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="costing-region-tbody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Vendor Breakdown Table -->
+                <h3 style="margin-bottom: 1.5rem;">Vendor Breakdown</h3>
+                <div style="overflow-x: auto; margin-bottom: 2rem;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Vendor</th>
+                                <th>Count</th>
+                                <th>Total Cost</th>
+                                <th>Avg Cost</th>
+                                <th>Top Region</th>
+                            </tr>
+                        </thead>
+                        <tbody id="costing-vendor-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Maps Page -->
+            <section id="page-maps" class="page" style="display: none;">
+                <!-- Header with Toggle -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div>
+                        <h2 style="margin-bottom: 0.5rem;">Branch Location Map</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">View branches on a map (limited to 300 to save API credits). Uses <strong>Address</strong> column from Excel. Color-coded by installation status.</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                        <button id="configure-api-btn" style="padding: 0.75rem 1rem; background: var(--accent-teal); color: var(--primary-dark); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: none;">🔑 Configure API Key</button>
+                        <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; font-size: 0.95rem; background: var(--bg-tertiary); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-color); transition: all 0.2s;">
+                            <input id="maps-enabled-toggle" type="checkbox" checked style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-teal);">
+                            <span>Enable Map</span>
+                        </label>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem; font-style: italic;">Toggle off to save API credits</span>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 20px; height: 20px; background: #10b981; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);"></div>
+                        <span style="font-size: 0.9rem;">Completed</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 20px; height: 20px; background: #f59e0b; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);"></div>
+                        <span style="font-size: 0.9rem;">In Progress</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 20px; height: 20px; background: #ef4444; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);"></div>
+                        <span style="font-size: 0.9rem;">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Map Container -->
+                <div style="background: var(--bg-secondary); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
+                    <div id="maps-container" style="width: 100%; height: 600px; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary);">
+                        <div style="text-align: center; color: var(--text-secondary);">
+                            <div style="font-size: 2rem; margin-bottom: 1rem;">📍</div>
+                            <p>Map loading... or disabled to save API credits</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats below map -->
+                <div class="grid grid-3" style="margin-top: 2rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Completed</div>
+                        <div class="kpi-value" id="map-completed-count">—</div>
+                        <div class="kpi-subtext" id="map-completed-pct">0%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">In Progress</div>
+                        <div class="kpi-value" id="map-progress-count">—</div>
+                        <div class="kpi-subtext" id="map-progress-pct">0%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Not Started</div>
+                        <div class="kpi-value" id="map-notstarted-count">—</div>
+                        <div class="kpi-subtext" id="map-notstarted-pct">0%</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Branch Detail Modal -->
+        <div id="branch-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-branch-name">Branch Details</h3>
+                    <button class="modal-close" onclick="closeBranchModal()">×</button>
+                </div>
+                <div class="modal-body" id="modal-body"></div>
+            </div>
+        </div>
+
+        <!-- Renovation Branches Modal -->
+        <div id="renovation-modal" class="modal">
+            <div class="modal-content" style="max-width: 900px;">
+                <div class="modal-header">
+                    <h3>🏗️ Under Renovation Branches</h3>
+                    <button class="modal-close" onclick="closeRenovationModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Branch Name</th>
+                                    <th>Region</th>
+                                    <th>Status</th>
+                                    <th>Installation Date</th>
+                                    <th>Site Readiness</th>
+                                </tr>
+                            </thead>
+                            <tbody id="renovation-branches-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maps API Key Modal -->
+        <div id="maps-api-key-modal" class="modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3>Google Maps API Key</h3>
+                    <button class="modal-close" onclick="closeMapsApiKeyModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">Enter your Google Maps API key to enable the map feature.</p>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">API Key</label>
+                        <input id="maps-api-key-input" type="password" placeholder="Paste your API key here..." style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: monospace; font-size: 0.9rem;">
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        <strong>Don't have an API key?</strong> Get one free from <a href="https://console.cloud.google.com" target="_blank" style="color: var(--accent-teal); text-decoration: none;">Google Cloud Console</a>
+                    </p>
+                    <div style="display: flex; gap: 1rem;">
+                        <button id="save-maps-api-key-btn" class="btn btn-primary" style="flex: 1;">Save & Load Map</button>
+                        <button onclick="closeMapsApiKeyModal()" class="btn" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color);">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container" style="position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2000;"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script type="module" src="js/theme.js"></script>
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/state.js"></script>
+    <script type="module" src="js/components/nav.js"></script>
+    <script type="module" src="js/components/toast.js"></script>
+    <script type="module" src="js/components/modal.js"></script>
+    <script type="module" src="js/pages/upload.js"></script>
+    <script type="module" src="js/pages/overview.js"></script>
+    <script type="module" src="js/pages/branches.js"></script>
+    <script type="module" src="js/pages/timeline.js"></script>
+    <script type="module" src="js/pages/costing.js"></script>
+    <script type="module" src="js/pages/maps.js"></script>
+    <script type="module" src="js/pages/progress.js"></script>
+</body>
+</html>

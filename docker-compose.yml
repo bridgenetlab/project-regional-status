@@ -1,20 +1,36 @@
 version: "3.8"
 
 services:
-  project-tracking-regional:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: project-tracking-backend:latest
+    expose:
+      - "8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MAX_UPLOAD_SIZE_MB=50
+      - SESSION_TTL_SECONDS=3600
+
+  frontend:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: project-tracking-regional:latest
+      dockerfile: nginx/Dockerfile
+    image: project-tracking-frontend:latest
     ports:
       - "3000:80"
     restart: unless-stopped
+    depends_on:
+      - backend
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/"]
       interval: 30s
       timeout: 5s
       retries: 3
-    environment:
-      - NODE_ENV=production
-    volumes:
-      - ./dashboard:/usr/share/nginx/html
