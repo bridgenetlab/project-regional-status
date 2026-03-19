@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>project-regional-status</Name>
+  <Repository>ghcr.io/bridgenetlab/site-dashboard:latest</Repository>
+  <Registry>ghcr.io</Registry>
+  <Network type="bridge"/>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/bridgenetlab/project-regional-status</Support>
+  <Project>https://github.com/bridgenetlab/project-regional-status</Project>
+  <Overview>Regional Status Dashboard - Interactive map showing branch locations with geocoding and site details. Upload Excel files and view all sites on a map with search and filtering capabilities.</Overview>
+  <Category>Status</Category>
+  <WebUI>http://[IP]:[PORT:3000]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/bridgenetlab/project-regional-status/main/unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/bridgenetlab/project-regional-status/main/frontend/favicon.ico</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <DonateText/>
+  <DonateLink/>
+  <Description>
+    Project Regional Status Dashboard
+
+    Features:
+    - Interactive map with site locations
+    - Drag-and-drop Excel file upload
+    - Automatic address geocoding
+    - Search and filter sites
+    - Responsive design for desktop and mobile
+    - Local storage for Google Maps API key
+    - Site details panel with full information
+
+    Setup:
+    1. Access the dashboard at http://[IP]:3000
+    2. Enter your Google Maps API key (free with $200/month credit)
+    3. Upload your Excel file with branch/site data
+    4. View all locations on the interactive map
+
+    Supported columns in Excel:
+    - Branch Name / Site Name
+    - Address
+    - Phone / H/Phone PC
+    - Contact / Pengurus
+    - Installation Date
+    - Any other custom columns
+
+    For more info: https://github.com/bridgenetlab/project-regional-status
+  </Description>
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort>3000</HostPort>
+        <ContainerPort>80</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  <Environment/>
+  <Labels/>
+  <Config Name="Web Port" Target="3000" Default="3000" Mode="tcp" Description="Web interface port" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Volumes/>
+</Container>
