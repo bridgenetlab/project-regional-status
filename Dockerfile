@@ -1,7 +1,7 @@
 FROM nginx:stable-alpine
 
-# Copy dashboard files
-COPY dashboard/ /usr/share/nginx/html/
+# Copy frontend files
+COPY frontend/ /usr/share/nginx/html/
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
